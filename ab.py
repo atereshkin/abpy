@@ -1,10 +1,8 @@
 import re
 import sys
 
-f = file('easylist.txt')
 
 RE_TOK = re.compile('\W')
-index = {}
 
 
 MAP_RE = (('\|\|','(//|\.)'),
@@ -69,31 +67,36 @@ class Rule(object):
     def __unicode__(self):
         return self.rule_str
 
-for rul in f.xreadlines():
-    if rul.startswith('!'): # Comment 
-        continue 
-    if '##' in rul: # HTML rule
-        continue
-    try:
-        rule = Rule(rul)
-    except RuleSyntaxError:
-        print 'syntax error in ', rul
-    for tok in rule.get_tokens():
-        if len(tok) > 2:
-            if tok not in index:
-                index[tok] = []
-            index[tok].append(rule)
 
-def match(url):
-    tokens = RE_TOK.split(url)
-    for tok in tokens:
-        if len(tok) > 2:
-            if tok in index:
-                for rule in index[tok]:
-                    if rule.match(url):
-                        print unicode(rule)
+class Filter(object):
+    def __init__(self, f):
+        self.index = {}
+        for rul in f.xreadlines():
+            if rul.startswith('!'): # Comment 
+                continue 
+            if '##' in rul: # HTML rule
+                continue
+            try:
+                rule = Rule(rul)
+            except RuleSyntaxError:
+                print 'syntax error in ', rul
+            for tok in rule.get_tokens():
+                if len(tok) > 2:
+                    if tok not in self.index:
+                        self.index[tok] = []
+                    self.index[tok].append(rule)
+
+    def match(self, url, elementtype=None):
+        tokens = RE_TOK.split(url)
+        for tok in tokens:
+            if len(tok) > 2:
+                if tok in self.index:
+                    for rule in self.index[tok]:
+                        if rule.match(url, elementtype=elementtype):
+                            print unicode(rule)
 
 
 if __name__ == '__main__':
+    f = Filter(file('easylist.txt'))
     print 'start matching'
-    match(sys.argv[1])
+    f.match(sys.argv[1])
